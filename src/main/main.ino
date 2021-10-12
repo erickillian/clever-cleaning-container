@@ -28,7 +28,7 @@
 const byte ROWS = 4;
 const byte COLS = 4;
 
-char hexaKeys[ROWS][COL] = {
+char keys[ROWS][COL] = {
   {'1','2','3','A'},
   {'4','5','6','B'},
   {'7','8','9','C'},
@@ -39,12 +39,20 @@ char hexaKeys[ROWS][COL] = {
 const byte row_pins[ROWS] = {1,2,3,4} //Pins used for the rows of the keypad
 const byte col_pins[COLS] = {5,6,7,8} // Pins for the columns of the keypad
 
+// Initialise the Keypad
+Keypad keypadMatrix = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
 void setup() {
   // put your setup code here, to run once:
   
+  Serial.begin(9600);   // Initialise the serial monitor
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  char button = customKeypad.getKey();
 
+  if (button) {
+    Serial.println(button);
+  }
 }
