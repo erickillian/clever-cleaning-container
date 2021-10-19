@@ -24,33 +24,44 @@
 
 #include <EEPROM.h>
 #include <Keypad.h>
+#include <Adafruit_MotorShield.h>
 
 const byte ROWS = 4;
 const byte COLS = 4;
 
-char keys[ROWS][COL] = {
+char keys[ROWS][COLS] = {
   {'1','2','3','A'},
   {'4','5','6','B'},
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
 
+// Create the motor shield object with the default I2C address
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_DCMotor *myMotor = AFMS.getMotor(0);
+
 // These pins might need to change based on what pins are needed for the motor shield outputs
-const byte row_pins[ROWS] = {1,2,3,4} //Pins used for the rows of the keypad
-const byte col_pins[COLS] = {5,6,7,8} // Pins for the columns of the keypad
+const byte row_pins[ROWS] = {9,2,3,4}; // Pins used for the rows of the keypad
+const byte col_pins[COLS] = {5,6,7,8}; // Pins for the columns of the keypad
 
 // Initialise the Keypad
-Keypad keypadMatrix = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+Keypad keypadMatrix = Keypad(makeKeymap(keys), row_pins, col_pins, ROWS, COLS);
 
 void setup() {
   // put your setup code here, to run once:
   
   Serial.begin(9600);   // Initialise the serial monitor
+
+  // Set the speed to start, from 0 (off) to 255 (max speed)
+  myMotor->setSpeed(255);
+  myMotor->run(FORWARD);
+  // turn on motor
+  myMotor->run(RELEASE);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  char button = customKeypad.getKey();
+  char button = keypadMatrix.getKey();
 
   if (button) {
     Serial.println(button);
