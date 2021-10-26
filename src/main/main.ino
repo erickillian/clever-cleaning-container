@@ -50,6 +50,8 @@ const byte col_pins[COLS] = {5,6,7,8}; // Pins for the columns of the keypad
 // Initialise the Keypad
 Keypad keypadMatrix = Keypad(makeKeymap(keys), row_pins, col_pins, ROWS, COLS);
 
+int selected_motor = 1;
+
 void setup() {
   // put your setup code here, to run once:
   
@@ -105,25 +107,24 @@ void loop() {
   if (button) {
      switch(button) {
        case 'A':
-          Serial.println("Dispense A");
-          
-          runMotor(1, 1000);
-
+          Serial.println("Select A");
+          selected_motor = 1;
           break;
        case 'B':
-          Serial.println("Dispense B");
-
-          runMotor(2, 1000);
+          Serial.println("Select B");
+          selected_motor = 2;
           break;
        case 'C':
-          Serial.println("Dispense C");
-
-          runMotor(3, 1000);
+          Serial.println("Select C");
+          selected_motor = 3;
           break;
        case 'D':
-          Serial.println("Dispense D");
-
-          runMotor(4, 1000);
+          Serial.println("Select D");
+          selected_motor = 4;
+          break;
+       case '#':
+          Serial.println("Dispense");
+          runMotor(selected_motor, 1000);
           break;
   
        default: //Optional
