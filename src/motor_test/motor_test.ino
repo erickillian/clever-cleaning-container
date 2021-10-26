@@ -37,36 +37,22 @@ void setup() {
 }
 
 void loop() {
-  uint8_t i;
+//  uint8_t i;
 
   Serial.print("tick");
 
- // myMotor->run(FORWARD);
-  myMotor->setSpeed(255);
-  delay(1000);
-  /*
-  for (i=0; i<255; i++) {
-    myMotor->setSpeed(i);
-    delay(10);
-  }
-  for (i=255; i!=0; i--) {
-    myMotor->setSpeed(i);
-    delay(10);
-  }
+//  myMotor->run(FORWARD);
+//  myMotor->setSpeed(255);
+//  delay(1000);
 
-  Serial.print("tock");
-
-  myMotor->run(FORWARD);
-  for (i=0; i<255; i++) {
-    myMotor->setSpeed(i);
-    delay(10);
-  }
-  for (i=255; i!=0; i--) {
-    myMotor->setSpeed(i);
-    delay(10);
-  }
-  */
-  Serial.print("tech");
-  myMotor->run(RELEASE);
-  delay(1000);
+//  Serial.print("tock");
+//
+//  myMotor->run(FORWARD);
+//  for (i=255; i!=0; i--) {
+//    myMotor->setSpeed(i);
+//    delay(10);
+//  }
+  
+//  Serial.print("tech");
+//  myMotor->run(RELEASE);
 }

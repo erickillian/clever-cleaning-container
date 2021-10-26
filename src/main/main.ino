@@ -38,7 +38,10 @@ char keys[ROWS][COLS] = {
 
 // Create the motor shield object with the default I2C address
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-Adafruit_DCMotor *myMotor = AFMS.getMotor(0);
+Adafruit_DCMotor *motor1 = AFMS.getMotor(1);
+Adafruit_DCMotor *motor2 = AFMS.getMotor(2);
+Adafruit_DCMotor *motor3 = AFMS.getMotor(3);
+Adafruit_DCMotor *motor4 = AFMS.getMotor(4);
 
 // These pins might need to change based on what pins are needed for the motor shield outputs
 const byte row_pins[ROWS] = {9,2,3,4}; // Pins used for the rows of the keypad
@@ -51,12 +54,48 @@ void setup() {
   // put your setup code here, to run once:
   
   Serial.begin(9600);   // Initialise the serial monitor
+  if (!AFMS.begin()) {         // create with the default frequency 1.6KHz
+    Serial.println("Could not find Motor Shield. Check wiring.");
+    while (1);
+  }
 
   // Set the speed to start, from 0 (off) to 255 (max speed)
-  myMotor->setSpeed(255);
-  myMotor->run(FORWARD);
-  // turn on motor
-  myMotor->run(RELEASE);
+  motor1->run(FORWARD);
+  motor2->run(FORWARD);
+  motor3->run(FORWARD);
+  motor4->run(FORWARD);
+  motor1->setSpeed(0);
+  motor2->setSpeed(0);
+  motor3->setSpeed(0);
+  motor4->setSpeed(0);
+
+}
+
+
+void runMotor(int motor_num, int time_ms) {
+  switch(motor_num) {
+    case 1:
+      Serial.println("Dispense A");
+      motor1->setSpeed(255);
+      break;
+    case 2:
+      Serial.println("Dispense B");
+      motor2->setSpeed(255);
+    break;
+    case 3:
+      motor3->setSpeed(255);
+      Serial.println("Dispense C");
+    break;
+    case 4:
+      motor4->setSpeed(255);
+      Serial.println("Dispense D");
+    break;
+  }
+  delay(time_ms);
+  motor1->setSpeed(0);
+  motor2->setSpeed(0);
+  motor3->setSpeed(0);
+  motor4->setSpeed(0);
 }
 
 void loop() {
@@ -64,6 +103,31 @@ void loop() {
   char button = keypadMatrix.getKey();
 
   if (button) {
-    Serial.println(button);
+     switch(button) {
+       case 'A':
+          Serial.println("Dispense A");
+          
+          runMotor(1, 1000);
+
+          break;
+       case 'B':
+          Serial.println("Dispense B");
+
+          runMotor(2, 1000);
+          break;
+       case 'C':
+          Serial.println("Dispense C");
+
+          runMotor(3, 1000);
+          break;
+       case 'D':
+          Serial.println("Dispense D");
+
+          runMotor(4, 1000);
+          break;
+  
+       default: //Optional
+          Serial.println(button);
+     }
   }
 }
