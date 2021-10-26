@@ -25,6 +25,16 @@
 #include <EEPROM.h>
 #include <Keypad.h>
 #include <Adafruit_MotorShield.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const byte ROWS = 4;
 const byte COLS = 4;
@@ -56,21 +66,42 @@ void setup() {
   // put your setup code here, to run once:
   
   Serial.begin(9600);   // Initialise the serial monitor
-  if (!AFMS.begin()) {         // create with the default frequency 1.6KHz
-    Serial.println("Could not find Motor Shield. Check wiring.");
-    while (1);
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+//    while (1);
   }
+  
+//  if (!AFMS.begin()) {         // create with the default frequency 1.6KHz
+//    Serial.println("Could not find Motor Shield. Check wiring.");
+////    while (1);
+//  }
+
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+  delay(2000); // Pause for 2 seconds
 
   // Set the speed to start, from 0 (off) to 255 (max speed)
-  motor1->run(FORWARD);
-  motor2->run(FORWARD);
-  motor3->run(FORWARD);
-  motor4->run(FORWARD);
-  motor1->setSpeed(0);
-  motor2->setSpeed(0);
-  motor3->setSpeed(0);
-  motor4->setSpeed(0);
+//  motor1->run(FORWARD);
+//  motor2->run(FORWARD);
+//  motor3->run(FORWARD);
+//  motor4->run(FORWARD);
+//  motor1->setSpeed(0);
+//  motor2->setSpeed(0);
+//  motor3->setSpeed(0);
+//  motor4->setSpeed(0);
 
+}
+
+void displayText(String s) {
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setCursor(0,24);
+  display.setTextSize(2);
+  display.println(s);
+  display.display();
 }
 
 
@@ -78,26 +109,26 @@ void runMotor(int motor_num, int time_ms) {
   switch(motor_num) {
     case 1:
       Serial.println("Dispense A");
-      motor1->setSpeed(255);
+//      motor1->setSpeed(255);
       break;
     case 2:
       Serial.println("Dispense B");
-      motor2->setSpeed(255);
+//      motor2->setSpeed(255);
     break;
     case 3:
-      motor3->setSpeed(255);
+//      motor3->setSpeed(255);
       Serial.println("Dispense C");
     break;
     case 4:
-      motor4->setSpeed(255);
+//      motor4->setSpeed(255);
       Serial.println("Dispense D");
     break;
   }
   delay(time_ms);
-  motor1->setSpeed(0);
-  motor2->setSpeed(0);
-  motor3->setSpeed(0);
-  motor4->setSpeed(0);
+//  motor1->setSpeed(0);
+//  motor2->setSpeed(0);
+//  motor3->setSpeed(0);
+//  motor4->setSpeed(0);
 }
 
 void loop() {
@@ -109,18 +140,22 @@ void loop() {
        case 'A':
           Serial.println("Select A");
           selected_motor = 1;
+          displayText("A");
           break;
        case 'B':
           Serial.println("Select B");
           selected_motor = 2;
+          displayText("B");
           break;
        case 'C':
           Serial.println("Select C");
           selected_motor = 3;
+          displayText("C");
           break;
        case 'D':
           Serial.println("Select D");
           selected_motor = 4;
+          displayText("D");
           break;
        case '#':
           Serial.println("Dispense");
