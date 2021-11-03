@@ -20,231 +20,164 @@
   Modified 10/12/2021
   Eric Killian
 */
-
 #include <EEPROM.h>
 #include <Keypad.h>
-#include <Adafruit_MotorShield.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-//#include <string.h>
+#include <Adafruit_MotorShield.h>
 
-#define MAX_DIGITS 4
+#define SCREEN_WIDTH          128
+#define SCREEN_HEIGHT         64
+#define OLED_RESET            4
+#define SCREEN_ADDRESS        0x3C
+#define MAX_DIGITS            3
+#define SELECTED_MOTOR_ADDR   0
+#define AMOUNTS_ADDR          2
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const byte ROWS = 4;
 const byte COLS = 4;
-
 char keys[ROWS][COLS] = {
     {'1', '2', '3', 'A'},
     {'4', '5', '6', 'B'},
     {'7', '8', '9', 'C'},
-    {'*', '0', '#', 'D'}};
-
-// These pins might need to change based on what pins are needed for the motor shield outputs
+    {'*', '0', '#', 'D'}
+};
 const byte row_pins[ROWS] = {2, 3, 4, 5}; // Pins used for the rows of the keypad
 const byte col_pins[COLS] = {6, 7, 8, 9}; // Pins for the columns of the keypad
 
-// Initialise the Keypad
+// Motor Sheild Initialization, uses default I2C address
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_DCMotor *motors[4] = {AFMS.getMotor(1), AFMS.getMotor(2), AFMS.getMotor(3), AFMS.getMotor(4)};
+
+// Keypad Initialization
 Keypad keypadMatrix = Keypad(makeKeymap(keys), row_pins, col_pins, ROWS, COLS);
 
-
-//#define SCREEN_WIDTH 128    // OLED display width, in pixels
-//#define SCREEN_HEIGHT 64    // OLED display height, in pixels
-//#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
-//#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-//Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-
-// Create the motor shield object with the default I2C address
-Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-Adafruit_DCMotor *motor1 = AFMS.getMotor(1);
-Adafruit_DCMotor *motor2 = AFMS.getMotor(2);
-Adafruit_DCMotor *motor3 = AFMS.getMotor(3);
-Adafruit_DCMotor *motor4 = AFMS.getMotor(4);
-
 // motor selection variables
-int selected_motor_addr = 0;
-int selected_motor = 1;
+int selected_motor;
 
-// opperating mode
+// program feature variables
 bool program_mode = false;
+char program_number[MAX_DIGITS+1];
+int program_index = 0;
 
 // time in ms for each motor
-int amounts[4] = {1000, 1000, 1000, 1000};
+unsigned int amounts[4] = {100, 100, 100, 100};
 
-
-void setup()
-{
-  // put your setup code here, to run once:
-
-  Serial.begin(9600); // Initialise the serial monitor
-//  selected_motor = EEPROM.read(selected_motor_addr);
-  Wire.begin();
+void setup() {
+  Serial.begin(9600);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-//  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-//  {
-//    Serial.println(F("SSD1306 allocation failed"));
-//        while (1);
-//  }
-
-    if (!AFMS.begin()) {         // create with the default frequency 1.6KHz
-      Serial.println("Could not find Motor Shield. Check wiring.");
-      while (1);
-    }
-
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
-//  display.clearDisplay();
-//  display.setTextColor(WHITE);
-//  display.setCursor(0,24);
-//  display.setTextSize(2);
-//  display.println("X");
-//  display.display();
-//  delay(2000);
-
-  // Set the speed to start, from 0 (off) to 255 (max speed)
-    motor1->run(FORWARD);
-    motor2->run(FORWARD);
-    motor3->run(FORWARD);
-    motor4->run(FORWARD);
-    motor1->setSpeed(0);
-    motor2->setSpeed(0);
-    motor3->setSpeed(0);
-    motor4->setSpeed(0);
-}
-
-//void displayText(String s)
-//{
-//  display.clearDisplay();
-//  display.setTextColor(WHITE);
-//  display.setCursor(0, 24);
-//  display.setTextSize(2);
-//  display.println(s);
-//  display.display();
-//}
-
-void runMotor(int motor_num, int time_ms)
-{
-  switch (motor_num)
-  {
-  case 1:
-    Serial.println("Dispense A");
-    motor1->setSpeed(255);
-    break;
-  case 2:
-    Serial.println("Dispense B");
-    motor2->setSpeed(255);
-    break;
-  case 3:
-    motor3->setSpeed(255);
-    Serial.println("Dispense C");
-    break;
-  case 4:
-    motor4->setSpeed(255);
-    Serial.println("Dispense D");
-    break;
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
   }
-  delay(time_ms);
-    motor1->setSpeed(0);
-    motor2->setSpeed(0);
-    motor3->setSpeed(0);
-    motor4->setSpeed(0);
-}
 
-int read_number() {
-  Serial.println("Entering into READ NUMBER");
-  bool stop = false;
-  char number[MAX_DIGITS] = "";
-  int i = 0;
-  while (!stop && i < MAX_DIGITS) {
-    char button = keypadMatrix.getKey();
-    if (button)
-    {
-      switch (button)
-      {
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-      case '0':
-        Serial.print("Pressed ");
-        Serial.println(button);
-        number[i] = button;
-        i++;
-        break;
-      case '*':
-        Serial.println("Pressed *");
-        stop = true;
-        break;
-      }
-//    displayText(number);
-//      Serial.println(number);
-    }
+  if (!AFMS.begin()) {         // create with the default frequency 1.6KHz
+    Serial.println("Could not find Motor Shield. Check wiring.");
+    while (1);
   }
-  Serial.println(number);
-  return atoi(number);
+
+  for (int i=0; i<4; i++) {
+    motors[i]->run(FORWARD);
+    motors[i]->setSpeed(0);
+    amounts[i] = (int) readIntFromEEPROM(AMOUNTS_ADDR+i*2);
+  }
+
+  selected_motor = (int) EEPROM.read(SELECTED_MOTOR_ADDR);
+
+  display.clearDisplay();
+  print_selected_motor();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   char button = keypadMatrix.getKey();
-
-  if (program_mode)
+  
+  if (button)
   {
-    int number = read_number();
-    if (number != -1 || number != 0) {
-      amounts[selected_motor-1] = number;
-    }
-    program_mode = false;
-  }
-  else
-  {
-    if (button)
-    {
-      switch (button)
-      {
-      case 'A':
-        Serial.println("Selected A");
-        selected_motor = 1;
-//        EEPROM.write(selected_motor_addr, selected_motor);
-//        displayText("A");
-        break;
-      case 'B':
-        Serial.println("Selected B");
-        selected_motor = 2;
-//        EEPROM.write(selected_motor_addr, selected_motor);
-//        displayText("B");
-        break;
-      case 'C':
-        Serial.println("Selected C");
-        selected_motor = 3;
-//        EEPROM.write(selected_motor_addr, selected_motor);
-//        displayText("C");
-        break;
-      case 'D':
-        Serial.println("Selected D");
-        selected_motor = 4;
-//        EEPROM.write(selected_motor_addr, selected_motor);
-//        displayText("D");
-        break;
-      case '#':
-        Serial.println("Pressed Dispense");
-        runMotor(selected_motor, amounts[selected_motor-1]);
-        break;
-      case '*':
-        Serial.println("Pressed Program");
+    if (program_mode) {
+      if (isdigit(button) && program_index < MAX_DIGITS) {
+        program_number[program_index] = button;
+        program_number[program_index+1] = '\0';
+        program_index++;
+      }
+      print_program_num();
+      if (button == '*') {
+        program_mode = false;
+        int amount = atoi(program_number);
+        if (amount != 0) {
+          amounts[selected_motor] = amount;
+          writeIntIntoEEPROM(AMOUNTS_ADDR+selected_motor*2, amount);
+        }
+        
+        print_selected_motor();
+      }
+      
+    } else {
+      if (button >= 'A' && button <= 'D') {
+        selected_motor = ((int) button) - 65;
+        EEPROM.write(SELECTED_MOTOR_ADDR, (byte) selected_motor);
+        print_selected_motor();
+      } else if (button == '#') {
+        // runs the motors
+        motors[selected_motor]->setSpeed(255);
+        delay(600*amounts[selected_motor]);
+        motors[selected_motor]->setSpeed(0);
+      }
+      else if (button == '*') {
         program_mode = true;
-        break;
-      default: // Optional
-        Serial.println("Used Pressed button which has no function in current mode");
+        program_index = 0;
+        program_number[0] = '\0';
+        program_number[1] = '\0';
+        program_number[2] = '\0';
+        program_number[3] = '\0';
+        program_number[4] = '\0';
+        print_program_num();
       }
     }
   }
+}
+
+void print_selected_motor() {
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(2);
+  display.setCursor(32, 0);
+  display.print(amounts[selected_motor]);
+  display.print("mL");
+  display.setCursor(54, 24);
+  display.setTextSize(4);
+  display.print((char) (selected_motor+65));
+  display.display();
+}
+
+void print_program_num() {
+  display.clearDisplay();
+  display.cp437(true);
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.print("Program");
+  display.setTextColor(WHITE);
+  display.setCursor(0, 24);
+  display.setTextSize(2);
+  display.print((char) (selected_motor + 65));
+  display.print(": ");
+  display.print(program_number);
+  display.print("mL");
+  display.display();
+}
+
+void writeIntIntoEEPROM(int address, unsigned int number) { 
+  EEPROM.write(address, (byte)(number >> 8));
+  EEPROM.write(address + 1, (byte)((number & 0xFF)));
+}
+
+unsigned int readIntFromEEPROM(int address) {
+  unsigned int byte1 = EEPROM.read(address);
+  unsigned int byte2 = EEPROM.read(address + 1);
+  return ((byte1 << 8) + byte2);
 }
